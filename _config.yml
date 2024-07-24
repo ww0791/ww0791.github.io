@@ -3,12 +3,12 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Hexo
+title: ww_blog
 subtitle: ''
-description: ''
+description: '默默的打工人'
 keywords:
-author: John Doe
-language: en
+author: wuwei
+language: zh-Hans
 timezone: ''
 
 # URL
@@ -97,7 +97,7 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: acorn
+theme: next
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
