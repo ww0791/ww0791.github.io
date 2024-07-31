@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="加密 解密," />
 
 
 
@@ -79,16 +79,17 @@
 
 
 
-<meta name="description" content="默默的打工人">
-<meta property="og:type" content="website">
-<meta property="og:title" content="tags">
-<meta property="og:url" content="http://example.com/tags/index.html">
+<meta name="description" content="SM2加解密实际操作">
+<meta property="og:type" content="article">
+<meta property="og:title" content="国密SM2前端加密，Java后台解密问题">
+<meta property="og:url" content="http://example.com/2021/04/02/workRecords/SM2/index.html">
 <meta property="og:site_name" content="工作总结">
-<meta property="og:description" content="默默的打工人">
+<meta property="og:description" content="SM2加解密实际操作">
 <meta property="og:locale">
-<meta property="article:published_time" content="2024-07-16T04:05:16.000Z">
-<meta property="article:modified_time" content="2024-07-16T04:05:45.831Z">
+<meta property="article:published_time" content="2021-04-02T07:44:32.000Z">
+<meta property="article:modified_time" content="2024-07-31T09:44:34.377Z">
 <meta property="article:author" content="吴伟">
+<meta property="article:tag" content="加密 解密">
 <meta name="twitter:card" content="summary">
 
 
@@ -119,13 +120,13 @@
 
 
 
-  <link rel="canonical" href="http://example.com/tags/"/>
+  <link rel="canonical" href="http://example.com/2021/04/02/workRecords/SM2/"/>
 
 
 
 
 
-  <title>tags | 工作总结</title>
+  <title>国密SM2前端加密，Java后台解密问题 | 工作总结</title>
   
 
 
@@ -240,40 +241,174 @@
 
   <div id="posts" class="posts-expand">
     
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/04/02/workRecords/SM2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="工作总结">
+    </span>
+
     
-    
-    <div class="post-block page">
       <header class="post-header">
 
-	<h1 class="post-title" itemprop="name headline">tags</h1>
-
-
-
-</header>
-
-      
-      
-      
-      <div class="post-body">
         
         
-          <div class="tag-cloud">
-            <div class="tag-cloud-title">
-                目前共计 5 个标签
-            </div>
-            <div class="tag-cloud-tags">
-              <a href="/tags/jvm/" style="font-size: 12px; color: #ccc">jvm</a> <a href="/tags/mybatis/" style="font-size: 12px; color: #ccc">mybatis</a> <a href="/tags/spring/" style="font-size: 12px; color: #ccc">spring</a> <a href="/tags/%E5%8A%A0%E5%AF%86-%E8%A7%A3%E5%AF%86/" style="font-size: 12px; color: #ccc">加密 解密</a> <a href="/tags/%E9%9B%AA%E8%8A%B1%E7%AE%97%E6%B3%95/" style="font-size: 12px; color: #ccc">雪花算法</a>
-            </div>
-          </div>
+          <h1 class="post-title" itemprop="name headline">国密SM2前端加密，Java后台解密问题</h1>
         
-      </div>
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-04-02T15:44:32+08:00">
+                2021-04-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  SM2加解密实际操作
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
       
       
+
+      
+        <p> 背景：要实现请求参数加密的功能，使用的是国密SM2算法，前端向后台发送请求获取公钥，将请求加密发送到后台，后台用对应的私钥进行解密</p>
+<p>问题：前端进行加密的请求，后台无法进行解析</p>
+<p>解决方案：（此处所用的类都为Hutool里的工具类）</p>
+<ul>
+<li>当前的前端的SM2加密js库都是使用SM2公钥的q值转成16进制进行加密，所以在后台给前端发送公钥时，需要提取公钥的q值并且转成16进制</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">KeyPair</span> <span class="variable">pair</span> <span class="operator">=</span> SecureUtil.generateKeyPair(<span class="string">&quot;SM2&quot;</span>);</span><br><span class="line"><span class="type">PrivateKey</span> <span class="variable">aPrivate</span> <span class="operator">=</span> pair.getPrivate();</span><br><span class="line"><span class="type">byte</span>[] privateKey = aPrivate.getEncoded();<span class="comment">//解密时需要用到</span></span><br><span class="line"><span class="type">PublicKey</span> <span class="variable">aPublic</span> <span class="operator">=</span> pair.getPublic();</span><br><span class="line"><span class="type">byte</span>[] publicKey = aPublic.getEncoded();<span class="comment">//解密时需要用到</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//将q值提取出来并且转成16进制</span></span><br><span class="line"><span class="type">String</span> <span class="variable">q</span> <span class="operator">=</span> HexUtil.encodeHexStr(((BCECPublicKey)aPublic).getQ().getEncoded(<span class="literal">false</span>));</span><br></pre></td></tr></table></figure>
+
+<p><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="点击并拖拽以移动"></p>
+<p>此处q就为前端加密是所用的公钥</p>
+<ul>
+<li>附加(2021&#x2F;08&#x2F;23):忘记把前端加密给整上来了(前端加密用的是sm-crypto的库,npm下载以后拉过来用)</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install --save sm-crypto</span><br></pre></td></tr></table></figure>
+
+<p><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="点击并拖拽以移动"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="variable">sm2</span> <span class="operator">=</span> require(<span class="string">&#x27;sm-crypto&#x27;</span>).sm2;</span><br><span class="line"><span class="type">const</span> <span class="variable">cipherMode</span> <span class="operator">=</span> <span class="number">1</span> <span class="comment">// 1 - C1C3C2，0 - C1C2C3，默认为1</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">//公钥,也就是后台传到前端的q值</span></span><br><span class="line"><span class="type">var</span> <span class="variable">publicKey</span> <span class="operator">=</span> <span class="string">&#x27;asdsadasdaddsad&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//params 参数  a就为传到后台加密后的参数 注意:传到后台的话 需要再加密后的字符串前面加上04 要不然解析不出来,或者后台解密之前加上04</span></span><br><span class="line"><span class="keyword">var</span> a=sm2.doEncrypt(JSON.stringify(params), publicKey, cipherMode)</span><br><span class="line"> </span><br><span class="line"></span><br><span class="line"> </span><br></pre></td></tr></table></figure>
+
+<p><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="点击并拖拽以移动"></p>
+<p>​    </p>
+<ul>
+<li>前端使用公钥将请求进行加密，后台进行解密</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//privateKey 为上述生成的私钥 publicKey为生成的公钥，注意 此处不是Q值</span></span><br><span class="line"><span class="type">SM2</span> <span class="variable">sm2</span> <span class="operator">=</span> SmUtil.sm2(privateKey, publicKey);</span><br><span class="line"><span class="comment">//body为加密后的数据（注意：此处加密数据可能缺少04开头，解密会失败，需要手动在body前拼上04，body=&quot;04&quot;+body）</span></span><br><span class="line"><span class="type">String</span> <span class="variable">requestBody</span> <span class="operator">=</span> sm2.decryptStr(body, KeyType.PrivateKey);</span><br></pre></td></tr></table></figure>
+
+<p><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="点击并拖拽以移动"></p>
+<p>到此 国密SM2前端加密，后台解密完成</p>
+
       
     </div>
     
     
     
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/%E5%8A%A0%E5%AF%86-%E8%A7%A3%E5%AF%86/" rel="tag"># 加密 解密</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/06/21/workRecords/snowID/" rel="prev" title="雪花算法生成重复的问题">
+                雪花算法生成重复的问题 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
   </div>
 
 
