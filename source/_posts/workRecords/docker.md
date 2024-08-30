@@ -1,7 +1,11 @@
 ---
-Title: docker日常总结
-
-
+title: docker问题处理
+date: 2024-08-30 15:44:32
+tags:
+  - docker 
+  - Mac
+categories: docker
+description: docker日常问题解决方案
 ---
 
 # mac安装mysql
