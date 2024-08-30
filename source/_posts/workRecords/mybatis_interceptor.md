@@ -1,7 +1,10 @@
 ---
 title: mybatis拦截器获取sql 
 date: 2022-07-15 15:44:32
-tags: mybatis
+tags:
+  - java 
+  - mybatis
+categories: mybatis
 description: mybatis自定义拦截器获取sql并存入到数据库中
 ---
 

@@ -1,7 +1,10 @@
 ---
 title: 记一次内存溢出情况
 date: 2024-06-23 12:44:32
-tags: jvm
+tags: 
+  - jvm
+  - java
+categories: jvm
 description: 接口请求过多，导致内存溢出
 ---
 

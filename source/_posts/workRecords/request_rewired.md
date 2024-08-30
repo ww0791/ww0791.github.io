@@ -1,7 +1,10 @@
 ---
 title: 复用request和response 
 date: 2021-11-30 12:39:23
-tags: spring
+tags:
+  - java 
+  - spring
+categories: spring
 description: 获取request里面的数据并且保存
 
 ---
