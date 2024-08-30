@@ -18,27 +18,33 @@ description: 雪花算法生成重复与时间回拨问题
 
 之前的代码:
 
+
+
+```java
 @Configuration
 public class SnowflakConfig {
-
     @Value("${syncWorkerId}")
     private Long workerId;
-     
+
     @Value("${syncDatacenterId}")
     private Long datacenterId;
-     
+
     @Bean
     public Snowflake snowflake(){
         return IdUtil.getSnowflake(workerId,datacenterId);
     }
 }
+```
+
 改后的代码
 
 
-@Component
-public class ServerConfig  implements ApplicationListener<WebServerInitializedEvent> {
-    private int serverPort;
 
+
+```java
+@Component
+public class ServerConfig implements ApplicationListener<WebServerInitializedEvent> {
+    private int serverPort;
     public String getUrl() {
         InetAddress address = null;
         try {
@@ -48,7 +54,7 @@ public class ServerConfig  implements ApplicationListener<WebServerInitializedEv
         }
         return "http://"+address.getHostAddress() +":"+this.serverPort;
     }
-     
+
     public String getIp(){
         InetAddress address = null;
         try {
@@ -58,11 +64,11 @@ public class ServerConfig  implements ApplicationListener<WebServerInitializedEv
         }
         return address.getHostAddress();
     }
-     
+
     public int getport(){
         return this.serverPort;
     }
-     
+
     public Long getLongIp(){
         InetAddress address = null;
         try {
@@ -76,20 +82,27 @@ public class ServerConfig  implements ApplicationListener<WebServerInitializedEv
     public void onApplicationEvent(WebServerInitializedEvent event) {
         this.serverPort = event.getWebServer().getPort();
     }
-
 }
 
+```
+
+
+
+```java
 @Configuration
 public class SnowflakConfig {
 
     @Resource
     private ServerConfig serverConfig;    
-     
+
     @Bean
     public Snowflake snowflake(){
         return IdUtil.getSnowflake(serverConfig.getLongIp()%32,serverConfig.getLongIp()%32);
     }
+
 }
+```
+
 修改好以后继续进行压力测试,发现还是偶尔会有主键冲突的情况,排查后发现服务器使用了chrony做了时间同步,时间同步以后的时候 可能会导致当前时间比上一次生成id的时间要早,等到了恰当的时间点会生成一样的id出来导致主键冲突
 
 解决方案:
