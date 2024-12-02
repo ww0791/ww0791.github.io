@@ -86,15 +86,13 @@
 <meta property="og:site_name" content="工作总结">
 <meta property="og:description" content="netty学习总结">
 <meta property="og:locale">
-<meta property="og:image" content="http://example.com/public/images/WeChat36ae9a4ea0137ed94782f6ebfb787734.jpg">
 <meta property="article:published_time" content="2024-10-11T11:44:32.000Z">
-<meta property="article:modified_time" content="2024-11-26T03:48:00.014Z">
+<meta property="article:modified_time" content="2024-11-26T06:07:16.464Z">
 <meta property="article:author" content="吴伟">
 <meta property="article:tag" content="linux">
 <meta property="article:tag" content="jdk">
 <meta property="article:tag" content="netty">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/public/images/WeChat36ae9a4ea0137ed94782f6ebfb787734.jpg">
 
 
 
@@ -350,14 +348,16 @@
       
 
       
-        <h1 id="什么是epoll"><a href="#什么是epoll" class="headerlink" title="什么是epoll"></a>什么是epoll</h1><p>引用参考: <a target="_blank" rel="noopener" href="https://sleticalboy.github.io/linux/2021/01/22/linux-epoll-mechanism/">李斌的小站</a></p>
+        <h1 id="什么是epoll"><a href="#什么是epoll" class="headerlink" title="什么是epoll"></a>什么是epoll</h1><p>引用参考: <a target="_blank" rel="noopener" href="https://sleticalboy.github.io/linux/2021/01/22/linux-epoll-mechanism/">linux epoll 机制</a></p>
 <p>epoll：是一种 I&#x2F;O 时间通信机制，是 Linux 内核实现 IO 多路复用的一种方式。</p>
 <p>IO 多路复用：在一个操作里同时监听多个输入输出源，在其中一个或多个输入输出源可用的时候 返回，然后对其进行读写操作。</p>
 <p>输入输出源：可以是文件（file）、网络（socket）、进程间的管道（pipe），因在 Linux 中 “一切皆文件”，所以都是用文件描述符（fd）来表示</p>
 <p>可读事件：当 fd 关联的内核缓冲区非空有数据可读时，则触发可读事件； 可写事件：当 fd 关联的内核缓冲区不满有空闲空间可写时，则触发可写事件；</p>
 <p>通知机制：当事件发生时，主动通知； 轮询机制：循环检查是否有事件发生，是通知机制的反面；</p>
 <p>再来解读 epoll 机制：当 fd 关联的内核缓冲区非空时，发出可读信号；当缓冲区不满时，发出 可写信号。</p>
-<h1 id="产生空轮询代码位置"><a href="#产生空轮询代码位置" class="headerlink" title="产生空轮询代码位置"></a>产生空轮询代码位置</h1><p><img src="/../../../../public/images/WeChat36ae9a4ea0137ed94782f6ebfb787734.jpg" alt="WeChat36ae9a4ea0137ed94782f6ebfb787734"></p>
+<h1 id="产生空轮询代码位置"><a href="#产生空轮询代码位置" class="headerlink" title="产生空轮询代码位置"></a>产生空轮询代码位置</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">NIOServer</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">Selector</span> <span class="variable">serverSelector</span> <span class="operator">=</span> Selector.open();</span><br><span class="line">        <span class="type">Selector</span> <span class="variable">clientSelector</span> <span class="operator">=</span> Selector.open();</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line"> </span><br><span class="line">                <span class="type">ServerSocketChannel</span> <span class="variable">listenerChannel</span> <span class="operator">=</span> ServerSocketChannel.open();</span><br><span class="line">                listenerChannel.socket().bind(<span class="keyword">new</span> <span class="title class_">InetSocketAddress</span>(<span class="number">8000</span>));</span><br><span class="line">                listenerChannel.configureBlocking(<span class="literal">false</span>);</span><br><span class="line">                listenerChannel.register(serverSelector, SelectionKey.OP_ACCEPT);</span><br><span class="line">                <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (serverSelector.select(<span class="number">1</span>) &gt; <span class="number">0</span>) &#123;<span class="comment">// jdk bug 导致此处会放开 但是没有事件过来 导致一直重复跑空轮询</span></span><br><span class="line">                        Set&lt;SelectionKey&gt; set = serverSelector.selectedKeys();</span><br><span class="line">                        Iterator&lt;SelectionKey&gt; keyIterator = set.iterator();</span><br><span class="line">                        <span class="keyword">while</span> (keyIterator.hasNext()) &#123;</span><br><span class="line">                            <span class="type">SelectionKey</span> <span class="variable">key</span> <span class="operator">=</span> keyIterator.next();</span><br><span class="line">                            <span class="keyword">if</span> (key.isAcceptable()) &#123;</span><br><span class="line">                                <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">                                    <span class="type">SocketChannel</span> <span class="variable">clientChannel</span> <span class="operator">=</span> ((ServerSocketChannel) key.channel()).accept();</span><br><span class="line">                                    clientChannel.configureBlocking(<span class="literal">false</span>);</span><br><span class="line">                                    clientChannel.register(clientSelector, SelectionKey.OP_READ);</span><br><span class="line">                                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                                    keyIterator.remove();</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (IOException ignored) &#123;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (clientSelector.select(<span class="number">1</span>) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        Set&lt;SelectionKey&gt; set = clientSelector.selectedKeys();</span><br><span class="line">                        Iterator&lt;SelectionKey&gt; keyIterator = set.iterator();</span><br><span class="line">                        <span class="keyword">while</span> (keyIterator.hasNext()) &#123;</span><br><span class="line">                            <span class="type">SelectionKey</span> <span class="variable">key</span> <span class="operator">=</span> keyIterator.next();</span><br><span class="line">                            <span class="keyword">if</span> (key.isReadable()) &#123;</span><br><span class="line">                                <span class="keyword">try</span> &#123;</span><br><span class="line">                                    <span class="type">SocketChannel</span> <span class="variable">clientChannel</span> <span class="operator">=</span> (SocketChannel) key.channel();</span><br><span class="line">                                    <span class="type">ByteBuffer</span> <span class="variable">byteBuffer</span> <span class="operator">=</span> ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">                                    clientChannel.read(byteBuffer);</span><br><span class="line">                                    byteBuffer.flip();</span><br><span class="line">                                    System.out.println(Charset.defaultCharset().newDecoder().decode(byteBuffer)</span><br><span class="line">                                            .toString());</span><br><span class="line">                                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                                    keyIterator.remove();</span><br><span class="line">                                    key.interestOps(SelectionKey.OP_READ);</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (IOException ignored) &#123;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Netty解决方式"><a href="#Netty解决方式" class="headerlink" title="Netty解决方式"></a>Netty解决方式</h1><p>netty底层也是调用selector.select()方法设置了超时时间,并且统计了轮询次数,如果超时了,则重制轮询次数,如果轮询次数大于512次则将此selector关闭,将里面的key重新注册到一个新的selector中</p>
 
       
     </div>
@@ -401,6 +401,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2024/10/23/workRecords/sql_input/" rel="prev" title="sqlMap校验sql注入">
+                sqlMap校验sql注入 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -481,7 +485,7 @@
               
                 <a href="/archives">
               
-                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-count">13</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -492,7 +496,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-count">12</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -503,7 +507,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">16</span>
+                  <span class="site-state-item-count">18</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -552,7 +556,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFepoll"><span class="nav-number">1.</span> <span class="nav-text">什么是epoll</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%A7%E7%94%9F%E7%A9%BA%E8%BD%AE%E8%AF%A2%E4%BB%A3%E7%A0%81%E4%BD%8D%E7%BD%AE"><span class="nav-number">2.</span> <span class="nav-text">产生空轮询代码位置</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFepoll"><span class="nav-number">1.</span> <span class="nav-text">什么是epoll</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%A7%E7%94%9F%E7%A9%BA%E8%BD%AE%E8%AF%A2%E4%BB%A3%E7%A0%81%E4%BD%8D%E7%BD%AE"><span class="nav-number">2.</span> <span class="nav-text">产生空轮询代码位置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Netty%E8%A7%A3%E5%86%B3%E6%96%B9%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">Netty解决方式</span></a></li></ol></div>
             
 
           </div>
