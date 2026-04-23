@@ -3,9 +3,9 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: 工作总结
+title: 阿伟的打工日记
 subtitle: '阿伟有话说'
-description: '默默的打工人'
+description: '一个后端打工人的技术笔记与日常碎碎念'
 keywords: Java,Spring,MyBatis,Docker,Kubernetes,k8s,JVM,后端,技术博客
 author: 阿伟
 language: zh-Hans
@@ -28,6 +28,14 @@ archive_dir: archives
 category_dir: categories
 code_dir: downloads/code
 i18n_dir: :lang
+
+# Local Search
+search:
+  path: search.xml
+  field: post
+  content: true
+  format: html
+
 skip_render:
   - 'google*.html'
   - 'BingSiteAuth.xml'
