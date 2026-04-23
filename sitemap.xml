@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://ww0791.github.io/2026/04/25/workRecords/react_funcalling/</loc>
+    
+    <lastmod>2026-04-25</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://ww0791.github.io/2026/04/23/workRecords/deepagents/</loc>
     
     <lastmod>2026-04-23</lastmod>
@@ -218,20 +227,6 @@
   </url>
   
   <url>
-    <loc>https://ww0791.github.io/tags/docker/</loc>
-    <lastmod>2026-04-23</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://ww0791.github.io/tags/Mac/</loc>
-    <lastmod>2026-04-23</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://ww0791.github.io/tags/%E9%AB%98%E6%80%A7%E8%83%BD/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
@@ -246,7 +241,14 @@
   </url>
   
   <url>
-    <loc>https://ww0791.github.io/tags/mybatis/</loc>
+    <loc>https://ww0791.github.io/tags/docker/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ww0791.github.io/tags/Mac/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -274,14 +276,28 @@
   </url>
   
   <url>
-    <loc>https://ww0791.github.io/tags/spring/</loc>
+    <loc>https://ww0791.github.io/tags/%E9%9B%AA%E8%8A%B1%E7%AE%97%E6%B3%95/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://ww0791.github.io/tags/%E9%9B%AA%E8%8A%B1%E7%AE%97%E6%B3%95/</loc>
+    <loc>https://ww0791.github.io/tags/mybatis/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ww0791.github.io/tags/ReAct/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ww0791.github.io/tags/FunctionCalling/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -296,6 +312,20 @@
   
   <url>
     <loc>https://ww0791.github.io/tags/sql/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ww0791.github.io/tags/all/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ww0791.github.io/tags/spring/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -329,13 +359,6 @@
     <priority>0.2</priority>
   </url>
   
-  <url>
-    <loc>https://ww0791.github.io/tags/all/</loc>
-    <lastmod>2026-04-23</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
 
   
   <url>
@@ -360,13 +383,6 @@
   </url>
   
   <url>
-    <loc>https://ww0791.github.io/categories/docker/</loc>
-    <lastmod>2026-04-23</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://ww0791.github.io/categories/disruptor/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
@@ -374,7 +390,7 @@
   </url>
   
   <url>
-    <loc>https://ww0791.github.io/categories/mybatis/</loc>
+    <loc>https://ww0791.github.io/categories/docker/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -395,13 +411,6 @@
   </url>
   
   <url>
-    <loc>https://ww0791.github.io/categories/spring/</loc>
-    <lastmod>2026-04-23</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://ww0791.github.io/categories/%E9%9B%AA%E8%8A%B1%E7%AE%97%E6%B3%95/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
@@ -409,7 +418,28 @@
   </url>
   
   <url>
+    <loc>https://ww0791.github.io/categories/mybatis/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://ww0791.github.io/categories/sql/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ww0791.github.io/categories/%E5%90%84%E7%B1%BB%E6%95%99%E7%A8%8B%E7%9B%AE%E5%BD%95%E5%A4%87%E4%BB%BD/</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://ww0791.github.io/categories/spring/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -424,13 +454,6 @@
   
   <url>
     <loc>https://ww0791.github.io/categories/netty/</loc>
-    <lastmod>2026-04-23</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://ww0791.github.io/categories/%E5%90%84%E7%B1%BB%E6%95%99%E7%A8%8B%E7%9B%AE%E5%BD%95%E5%A4%87%E4%BB%BD/</loc>
     <lastmod>2026-04-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
