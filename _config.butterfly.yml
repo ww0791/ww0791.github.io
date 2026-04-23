@@ -46,8 +46,9 @@ code_blocks:
 # Formal:
 #   icon: link || the description || color
 social:
-  # fab fa-github: https://github.com/xxxxx || Github || '#24292e'
-  # fas fa-envelope: mailto:xxxxxx@gmail.com || Email || '#4a7dbe'
+  fab fa-github: https://github.com/ww0791 || Github || '#24292e'
+  fas fa-envelope: mailto:1430365719@qq.com || Email || '#4a7dbe'
+  fas fa-rss: /atom.xml || RSS || '#ff6600'
 
 # --------------------------------------
 # Image Settings

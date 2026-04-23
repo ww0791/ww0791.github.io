@@ -6,8 +6,8 @@
 title: 工作总结
 subtitle: '阿伟有话说'
 description: '默默的打工人'
-keywords:
-author: 吴伟
+keywords: Java,Spring,MyBatis,Docker,Kubernetes,k8s,JVM,后端,技术博客
+author: 阿伟
 language: zh-Hans
 timezone: ''
 
@@ -29,6 +29,9 @@ category_dir: categories
 code_dir: downloads/code
 i18n_dir: :lang
 skip_render:
+  - 'google*.html'
+  - 'BingSiteAuth.xml'
+  - 'robots.txt'
 
 # Writing
 new_post_name: :title.md # File name of new posts
@@ -105,3 +108,10 @@ deploy:
   type: git
   repo: git@github.com:ww0791/ww0791.github.io.git
   branch: main
+
+# Sitemap for SEO
+sitemap:
+  path: sitemap.xml
+  rel: false
+  tags: true
+  categories: true

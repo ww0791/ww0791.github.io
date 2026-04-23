@@ -28,9 +28,6 @@ console.log("sk=="+sk)
 console.log("timestamp=="+time)
 
 function genBasicToken(ak, sk, timestamp) {
-   var sha256 = CryptoJS.SHA256(ak+sk+timestamp)
-   var str = CryptoJS.enc.Utf8.parse(ak+"."+sha256+"."+time)
-   var authorization = CryptoJS.enc.Base64.stringify(str);
    return authorization
 }
 

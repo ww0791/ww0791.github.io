@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /css/
+Disallow: /js/
+Disallow: /lib/
+Disallow: /images/
+Disallow: /img/
+Disallow: /fonts/
+Disallow: /vendors/
+
+Sitemap: https://ww0791.github.io/sitemap.xml
