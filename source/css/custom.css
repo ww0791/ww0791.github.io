@@ -1,0 +1,69 @@
+/* ============ 滚动条美化：细窄半透明，不挡 banner ============ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 170, 200, 0.35);
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 170, 200, 0.65);
+}
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 170, 200, 0.35) transparent;
+}
+
+/* ============ Preloader 灰色半透明遮罩 ============ */
+#loading-box {
+  background: rgba(30, 40, 55, 0.35) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+#loading-box .loading-left-bg,
+#loading-box .loading-right-bg {
+  background: transparent !important;
+}
+#loading-box .loading-word {
+  color: #e8eef5 !important;
+}
+
+/* ============ Footer 统一深色半透明，文字浅色 ============ */
+#footer {
+  background: rgba(15, 32, 39, 0.55) !important;
+  background-color: rgba(15, 32, 39, 0.55) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#footer::before {
+  background: transparent !important;
+  display: none !important;
+}
+#footer,
+#footer .footer-other,
+#footer .footer-copyright,
+#footer .copyright,
+#footer .framework-info,
+#footer .framework-info span,
+#footer .footer-separator,
+#footer a {
+  color: #e8eef5 !important;
+}
+#footer a:hover {
+  color: #49b1f5 !important;
+}
+
+/* ============ 暗黑模式：body 更深，footer 同步加深 ============ */
+[data-theme='dark'] #web_bg {
+  background: linear-gradient(135deg, #000428 0%, #004e92 100%) !important;
+}
+[data-theme='dark'] #footer {
+  background: rgba(0, 0, 0, 0.55) !important;
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}

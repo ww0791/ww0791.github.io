@@ -65,10 +65,10 @@ avatar:
 disable_top_img: false
 
 # If the banner of page not setting, it will show the default_top_img
-default_top_img:
+default_top_img: https://bing.img.run/1920x1080.php
 
 # The banner image of index page
-index_img:
+index_img: https://bing.img.run/1920x1080.php
 
 # The banner image of archive page
 archive_img:
@@ -95,7 +95,7 @@ footer_img: false
 # Website Background
 # Can set it to color, image URL or an array containing colors and/or image URLs
 # If an array is provided, a random background will be selected from the array on each load
-background:
+background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)
 
 cover:
   # Disable the cover or not
@@ -153,7 +153,7 @@ index_top_img_height: 60vh
 subtitle:
   enable: true
   # Typewriter Effect
-  effect: true
+  effect: false
   # Customize typed.js
   # https://github.com/mattboldt/typed.js/#customization
   typed_option:
@@ -808,7 +808,7 @@ mask:
 
 # Loading Animation
 preloader:
-  enable: false
+  enable: true
   # source
   # 1. fullpage-loading
   # 2. pace (progress bar)
@@ -883,11 +883,11 @@ canvas_fluttering_ribbon:
 # canvas_nest
 # https://github.com/hustcc/canvas-nest.js
 canvas_nest:
-  enable: false
+  enable: true
   # Color of lines, default: '0,0,0'; RGB values: (R,G,B).(note: use ',' to separate.)
-  color: '0,0,255'
+  color: '120,180,255'
   # The opacity of line (0~1)
-  opacity: 0.7
+  opacity: 0.6
   # The z-index property of the background
   zIndex: -1
   # The number of lines
@@ -902,7 +902,7 @@ fireworks:
 
 # Mouse click effects: Heart symbol
 click_heart:
-  enable: false
+  enable: true
   mobile: false
 
 # Mouse click effects: words
@@ -1073,9 +1073,12 @@ css_prefix: true
 # Insert the code to head (before '</head>' tag) and the bottom (before '</body>' tag)
 inject:
   head:
-    # - <link rel="stylesheet" href="/xxx.css">
+    - <link rel="preload" as="image" href="https://bing.img.run/1920x1080.php">
+    - <link rel="dns-prefetch" href="//bing.img.run">
+    - <style>#loading-box{background:rgba(30,40,55,.35)!important;backdrop-filter:blur(6px)!important;-webkit-backdrop-filter:blur(6px)!important}#loading-box .loading-left-bg,#loading-box .loading-right-bg{background:transparent!important}#loading-box .loading-word{color:#e8eef5!important}</style>
+    - <link rel="stylesheet" href="/css/custom.css">
   bottom:
-    # - <script src="xxxx"></script>
+    - <script src="/js/refresh-hitokoto.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
