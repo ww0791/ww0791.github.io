@@ -1,0 +1,168 @@
+/* ============ 时钟 + 天气小组件 ============ */
+.card-clock .clock-body {
+  padding: 12px 0 4px;
+  text-align: center;
+}
+.card-clock .clock-time {
+  font-family: 'SFMono-Regular', 'Menlo', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #49b1f5;
+  text-shadow: 0 2px 8px rgba(73, 177, 245, 0.25);
+}
+.card-clock .clock-date {
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+.card-clock .clock-weather {
+  margin-top: 8px;
+  font-size: 13px;
+  padding: 4px 8px;
+  background: rgba(73, 177, 245, 0.08);
+  border-radius: 6px;
+  display: inline-block;
+}
+[data-theme='dark'] .card-clock .clock-time {
+  color: #7ad3ff;
+}
+
+/* ============ 文章卡片 hover：轻微上浮 + 蓝色发光 ============ */
+#recent-posts > .recent-post-item,
+#recent-posts .recent-post-item {
+  transition: transform 0.35s ease, box-shadow 0.35s ease !important;
+  will-change: transform;
+}
+#recent-posts > .recent-post-item:hover,
+#recent-posts .recent-post-item:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 24px rgba(73, 177, 245, 0.25) !important;
+}
+[data-theme='dark'] #recent-posts .recent-post-item:hover {
+  box-shadow: 0 10px 24px rgba(73, 177, 245, 0.4) !important;
+}
+
+/* 文章封面图 hover 放大 */
+#recent-posts .recent-post-item .post_cover img {
+  transition: transform 0.5s ease !important;
+}
+#recent-posts .recent-post-item:hover .post_cover img {
+  transform: scale(1.05);
+}
+
+/* ============ Pace 顶部进度条（醒目） ============ */
+.pace {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pace-inactive .pace-progress {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.pace .pace-progress {
+  background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcf7f, #49b1f5, #b980ff) !important;
+  position: fixed !important;
+  z-index: 99999 !important;
+  top: 0 !important;
+  left: 0 !important;
+  height: 4px !important;
+  box-shadow: 0 0 12px #49b1f5, 0 0 6px #b980ff !important;
+  transition: width 0.2s ease-out !important;
+}
+
+/* ============ 背景：亮色白、暗色深蓝渐变 ============ */
+#web_bg {
+  background: #f7f9fc !important;
+}
+[data-theme='dark'] #web_bg {
+  background: linear-gradient(135deg, #000428 0%, #004e92 100%) !important;
+}
+
+/* 亮色模式：卡片保持白色实底；暗色模式：半透明深色让渐变透出 */
+[data-theme='dark'] #content-inner,
+[data-theme='dark'] .layout > div:first-child,
+[data-theme='dark'] #recent-posts > .recent-post-item,
+[data-theme='dark'] .card-widget {
+  background: rgba(24, 24, 28, 0.8) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ============ 滚动条美化：细窄半透明，不挡 banner ============ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 170, 200, 0.35);
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 170, 200, 0.65);
+}
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 170, 200, 0.35) transparent;
+}
+
+/* ============ Preloader 灰色半透明遮罩 ============ */
+#loading-box {
+  background: rgba(30, 40, 55, 0.35) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+#loading-box .loading-left-bg,
+#loading-box .loading-right-bg {
+  background: transparent !important;
+}
+#loading-box .loading-word {
+  color: #e8eef5 !important;
+}
+
+/* ============ Footer：亮色白灰、暗色深色 ============ */
+#footer {
+  background: rgba(245, 247, 250, 0.85) !important;
+  background-color: rgba(245, 247, 250, 0.85) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#footer::before {
+  background: transparent !important;
+  display: none !important;
+}
+#footer,
+#footer .footer-other,
+#footer .footer-copyright,
+#footer .copyright,
+#footer .framework-info,
+#footer .framework-info span,
+#footer .footer-separator,
+#footer a {
+  color: #4c5a6e !important;
+}
+#footer a:hover {
+  color: #49b1f5 !important;
+}
+
+/* ============ 暗黑模式：footer 同步加深 ============ */
+[data-theme='dark'] #footer {
+  background: rgba(0, 0, 0, 0.55) !important;
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+[data-theme='dark'] #footer,
+[data-theme='dark'] #footer .footer-other,
+[data-theme='dark'] #footer .footer-copyright,
+[data-theme='dark'] #footer .copyright,
+[data-theme='dark'] #footer .framework-info,
+[data-theme='dark'] #footer .framework-info span,
+[data-theme='dark'] #footer .footer-separator,
+[data-theme='dark'] #footer a {
+  color: #e8eef5 !important;
+}
