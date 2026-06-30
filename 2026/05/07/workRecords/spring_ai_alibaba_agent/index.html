@@ -1,0 +1,484 @@
+<!DOCTYPE html><html lang="zh-Hans" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>基于 Spring AI Alibaba 手撸一个企业研发助手 Agent（架构解析 + 全量代码） | 阿伟的打工日记</title><meta name="author" content="阿伟"><meta name="copyright" content="阿伟"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="企业里那种”一句话帮我改代码 &#x2F; 查工单 &#x2F; 部署服务”的研发助手 Agent（内部常被起名为小龙虾、摩卡、鲁班…）底层到底怎么搭？本文把组件模型拆开讲清楚，再用 Spring AI Alibaba 从零手撸一个能跑的最小可用版，代码直接复制就能起。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于 Spring AI Alibaba 手撸一个企业研发助手 Agent（架构解析 + 全量代码）">
+<meta property="og:url" content="https://ww0791.github.io/2026/05/07/workRecords/spring_ai_alibaba_agent/index.html">
+<meta property="og:site_name" content="阿伟的打工日记">
+<meta property="og:description" content="企业里那种”一句话帮我改代码 &#x2F; 查工单 &#x2F; 部署服务”的研发助手 Agent（内部常被起名为小龙虾、摩卡、鲁班…）底层到底怎么搭？本文把组件模型拆开讲清楚，再用 Spring AI Alibaba 从零手撸一个能跑的最小可用版，代码直接复制就能起。">
+<meta property="og:locale">
+<meta property="og:image" content="https://ww0791.github.io/img/avatar.jpeg">
+<meta property="article:published_time" content="2026-05-07T13:00:00.000Z">
+<meta property="article:modified_time" content="2026-05-07T13:00:00.000Z">
+<meta property="article:author" content="阿伟">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="Spring AI Alibaba">
+<meta property="article:tag" content="RAG">
+<meta property="article:tag" content="Function Calling">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ww0791.github.io/img/avatar.jpeg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "基于 Spring AI Alibaba 手撸一个企业研发助手 Agent（架构解析 + 全量代码）",
+  "url": "https://ww0791.github.io/2026/05/07/workRecords/spring_ai_alibaba_agent/",
+  "image": "https://ww0791.github.io/img/avatar.jpeg",
+  "datePublished": "2026-05-07T13:00:00.000Z",
+  "dateModified": "2026-05-07T13:00:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "阿伟",
+      "url": "https://ww0791.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://ww0791.github.io/2026/05/07/workRecords/spring_ai_alibaba_agent/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"No results found for: ${query}","hits_stats":"${hits} articles found"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '基于 Spring AI Alibaba 手撸一个企业研发助手 Agent（架构解析 + 全量代码）',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><style>#loading-box{background:rgba(30,40,55,.35)!important;backdrop-filter:blur(6px)!important;-webkit-backdrop-filter:blur(6px)!important}#loading-box .loading-left-bg,#loading-box .loading-right-bg{background:transparent!important}#loading-box .loading-word{color:#e8eef5!important}</style><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 6.3.0"></head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+btf.addGlobalFn('pjaxSend', () => {
+  Pace.restart()
+}, 'pace_restart')
+
+</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/themes/blue/pace-theme-flat-top.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><div class="bg-animation" id="web_bg" style="background-color: #f7f9fc;"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">18</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">38</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">17</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/banner.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">阿伟的打工日记</span></a><a class="nav-page-title" href="/"><span class="site-name">基于 Spring AI Alibaba 手撸一个企业研发助手 Agent（架构解析 + 全量代码）</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> Search</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">基于 Spring AI Alibaba 手撸一个企业研发助手 Agent（架构解析 + 全量代码）</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2026-05-07T13:00:00.000Z" title="Created 2026-05-07 21:00:00">2026-05-07</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2026-05-07T13:00:00.000Z" title="Updated 2026-05-07 21:00:00">2026-05-07</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/AI%E5%B7%A5%E7%A8%8B/">AI工程</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word Count:</span><span class="word-count">3.4k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading Time:</span><span>15mins</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post Views:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><blockquote>
+<p>企业里那种”一句话帮我改代码 &#x2F; 查工单 &#x2F; 部署服务”的研发助手 Agent（内部常被起名为小龙虾、摩卡、鲁班…）底层到底怎么搭？本文把组件模型拆开讲清楚，再用 <strong>Spring AI Alibaba</strong> 从零手撸一个能跑的最小可用版，代码直接复制就能起。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="目录导览"><a href="#目录导览" class="headerlink" title="目录导览"></a>目录导览</h2><ul>
+<li>第 1-3 章：<strong>架构解析</strong>。研发助手 Agent 的组件模型、Spring AI Alibaba 怎么对应上去、关键抽象（ChatClient &#x2F; Advisor &#x2F; Function &#x2F; Memory &#x2F; RAG）</li>
+<li>第 4-9 章：<strong>手撸实现</strong>。从 Spring Boot 工程初始化、接入大模型、注册工具、接 RAG、接 Memory、SSE 流式输出、多 Agent 协作，到 Docker 部署</li>
+<li>第 10 章：生产化要注意的坑</li>
+</ul>
+<hr>
+<h2 id="1-研发助手-Agent-到底在做什么"><a href="#1-研发助手-Agent-到底在做什么" class="headerlink" title="1. 研发助手 Agent 到底在做什么"></a>1. 研发助手 Agent 到底在做什么</h2><p>表面看：工程师在 IDE 侧边栏对话框里问一句”帮我看看昨天那个超时的接口在哪”，助手就能：</p>
+<ol>
+<li>理解意图 → “查询代码 + 看历史告警”</li>
+<li>调工具 → <code>git log</code> 找昨天提交 + 查 Prometheus 拉告警</li>
+<li>检索上下文 → 从代码库向量检索定位到具体类</li>
+<li>生成答复 → 带着源码片段、告警截图、修复建议返回</li>
+</ol>
+<p>拆开看，是一个**”意图路由 + 工具调用 + 检索增强 + 多轮记忆 + 流式输出”** 的大循环。</p>
+<h3 id="典型模块组成"><a href="#典型模块组成" class="headerlink" title="典型模块组成"></a>典型模块组成</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│                     用户（IDE/Web）                      │</span><br><span class="line">└────────────────────┬────────────────────────────────────┘</span><br><span class="line">                     │ Prompt</span><br><span class="line">                     ▼</span><br><span class="line">  ┌──────────────────────────────────────────────────────┐</span><br><span class="line">  │  ChatClient（门面层）                                │</span><br><span class="line">  │  ├─ Prompt 组装：system + history + RAG + user      │</span><br><span class="line">  │  ├─ Advisor 链：日志、审计、脱敏、限流...            │</span><br><span class="line">  │  └─ 调用 ChatModel（底层 LLM）                       │</span><br><span class="line">  └──────┬──────────────┬──────────────┬─────────────────┘</span><br><span class="line">         │              │              │</span><br><span class="line">         ▼              ▼              ▼</span><br><span class="line">     Memory           RAG           Tool/Function</span><br><span class="line">   （多轮记忆）    （向量检索）    （外部能力）</span><br><span class="line">         │              │              │</span><br><span class="line">         ▼              ▼              ▼</span><br><span class="line">     Redis/MySQL    Milvus/Qdrant   Git/Jira/K8s</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-为什么是-Spring-AI-Alibaba-不是裸-OpenAI-SDK"><a href="#2-为什么是-Spring-AI-Alibaba-不是裸-OpenAI-SDK" class="headerlink" title="2. 为什么是 Spring AI Alibaba 不是裸 OpenAI SDK"></a>2. 为什么是 Spring AI Alibaba 不是裸 OpenAI SDK</h2><p><strong>Spring AI Alibaba</strong> 是阿里团队基于 <a target="_blank" rel="noopener" href="https://spring.io/projects/spring-ai">Spring AI</a> 做的扩展，核心好处：</p>
+<ul>
+<li>原生支持通义千问 &#x2F; DashScope 系列国产模型（不用翻墙 &#x2F; 不用代理）</li>
+<li>保持 Spring AI 的抽象：<code>ChatClient</code>、<code>Advisor</code>、<code>ChatMemory</code>、<code>VectorStore</code>、<code>Function</code> 通用不变，以后想切 OpenAI 只改一行依赖</li>
+<li>提供 <code>nl2sql</code>、<code>graph</code>、<code>jmanus</code> 等”Agent 级”扩展包</li>
+<li>和 Spring Boot &#x2F; Spring Cloud 生态无缝衔接（自动装配、Actuator、配置中心）</li>
+</ul>
+<p>对于企业 Java 后端团队，<strong>用 Spring AI Alibaba 省去自己造一层”AI 中间件”的成本</strong>。</p>
+<hr>
+<h2 id="3-核心抽象一张表"><a href="#3-核心抽象一张表" class="headerlink" title="3. 核心抽象一张表"></a>3. 核心抽象一张表</h2><table>
+<thead>
+<tr>
+<th>抽象</th>
+<th>作用</th>
+<th>类比</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ChatModel</code></td>
+<td>最底层，直接 <code>call(Prompt)</code> 调模型</td>
+<td>JDBC Driver</td>
+</tr>
+<tr>
+<td><code>ChatClient</code></td>
+<td>高层门面，链式 API 组装 prompt、插 Advisor、绑 Function</td>
+<td>MyBatis</td>
+</tr>
+<tr>
+<td><code>Advisor</code></td>
+<td>拦截器链，在调用前后做横切（日志、脱敏、RAG 注入）</td>
+<td>Spring AOP</td>
+</tr>
+<tr>
+<td><code>Function</code>（工具）</td>
+<td>让模型调用 Java 方法，带 JSON Schema 描述</td>
+<td>RPC 接口</td>
+</tr>
+<tr>
+<td><code>ChatMemory</code></td>
+<td>多轮对话记忆存储</td>
+<td>Session 存储</td>
+</tr>
+<tr>
+<td><code>VectorStore</code></td>
+<td>向量库抽象，存取 embedding</td>
+<td>JPA Repository</td>
+</tr>
+<tr>
+<td><code>EmbeddingModel</code></td>
+<td>把文本转 embedding 的模型</td>
+<td>Hash 函数</td>
+</tr>
+<tr>
+<td><code>DocumentReader</code></td>
+<td>文档加载器（PDF&#x2F;MD&#x2F;代码）</td>
+<td>BufferedReader</td>
+</tr>
+<tr>
+<td><code>DocumentTransformer</code></td>
+<td>文档切分、清洗</td>
+<td>Stream.map</td>
+</tr>
+</tbody></table>
+<p>一个完整的 Agent &#x3D; <strong>ChatClient + 若干 Advisor + 若干 Function + Memory + RAG</strong>。</p>
+<hr>
+<h2 id="4-工程初始化：从-0-开始"><a href="#4-工程初始化：从-0-开始" class="headerlink" title="4. 工程初始化：从 0 开始"></a>4. 工程初始化：从 0 开始</h2><h3 id="4-1-环境"><a href="#4-1-环境" class="headerlink" title="4.1 环境"></a>4.1 环境</h3><ul>
+<li>JDK 17+</li>
+<li>Maven 3.8+</li>
+<li>一个通义千问 API Key（<a target="_blank" rel="noopener" href="https://bailian.console.aliyun.com/">阿里云百炼控制台</a> 申请，新用户免费 token）</li>
+</ul>
+<h3 id="4-2-依赖"><a href="#4-2-依赖" class="headerlink" title="4.2 依赖"></a>4.2 依赖</h3><p><code>pom.xml</code>：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">project</span> <span class="attr">xmlns</span>=<span class="string">&quot;http://maven.apache.org/POM/4.0.0&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">modelVersion</span>&gt;</span>4.0.0<span class="tag">&lt;/<span class="name">modelVersion</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">parent</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-parent<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.3.4<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">parent</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.awei<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>dev-assistant<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">properties</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">java.version</span>&gt;</span>17<span class="tag">&lt;/<span class="name">java.version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">spring-ai.version</span>&gt;</span>1.0.0-M3<span class="tag">&lt;/<span class="name">spring-ai.version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">spring-ai-alibaba.version</span>&gt;</span>1.0.0-M3.2<span class="tag">&lt;/<span class="name">spring-ai-alibaba.version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">properties</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud.ai<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-ai-alibaba-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>$&#123;spring-ai-alibaba.version&#125;<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 向量库：本地用 SimpleVectorStore，生产换 Milvus --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.ai<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-ai-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>$&#123;spring-ai.version&#125;<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">repositories</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">repository</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">id</span>&gt;</span>spring-milestones<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">url</span>&gt;</span>https://repo.spring.io/milestone<span class="tag">&lt;/<span class="name">url</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">repository</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">repositories</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">project</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="4-3-配置"><a href="#4-3-配置" class="headerlink" title="4.3 配置"></a>4.3 配置</h3><p><code>application.yml</code>：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">dev-assistant</span></span><br><span class="line">  <span class="attr">ai:</span></span><br><span class="line">    <span class="attr">dashscope:</span></span><br><span class="line">      <span class="attr">api-key:</span> <span class="string">$&#123;DASHSCOPE_API_KEY&#125;</span>    <span class="comment"># 环境变量读</span></span><br><span class="line">      <span class="attr">chat:</span></span><br><span class="line">        <span class="attr">options:</span></span><br><span class="line">          <span class="attr">model:</span> <span class="string">qwen-max</span>              <span class="comment"># 或 qwen-plus / qwen-turbo</span></span><br><span class="line">          <span class="attr">temperature:</span> <span class="number">0.3</span></span><br><span class="line"></span><br><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">8080</span></span><br></pre></td></tr></table></figure>
+
+<p>启动类就一个标准 Spring Boot 入口，略。</p>
+<hr>
+<h2 id="5-第一步：能聊天的-ChatClient"><a href="#5-第一步：能聊天的-ChatClient" class="headerlink" title="5. 第一步：能聊天的 ChatClient"></a>5. 第一步：能聊天的 ChatClient</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/chat&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ChatController</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ChatClient chatClient;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">ChatController</span><span class="params">(ChatClient.Builder builder)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.chatClient = builder</span><br><span class="line">                .defaultSystem(<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">                        你是一个严谨的 Java 研发助手。</span></span><br><span class="line"><span class="string">                        - 回答简洁、给代码示例</span></span><br><span class="line"><span class="string">                        - 不确定的事情明确说&quot;不确定&quot;</span></span><br><span class="line"><span class="string">                        - 涉及业务数据时优先调用工具而不是凭记忆</span></span><br><span class="line"><span class="string">                        &quot;&quot;&quot;</span>)</span><br><span class="line">                .build();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@GetMapping(&quot;/ask&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">ask</span><span class="params">(<span class="meta">@RequestParam</span> String q)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> chatClient.prompt()</span><br><span class="line">                .user(q)</span><br><span class="line">                .call()</span><br><span class="line">                .content();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>curl &quot;localhost:8080/chat/ask?q=Spring 循环依赖怎么解决&quot;</code> 就能通。</p>
+<p><strong>这一步就是裸 LLM 调用</strong>，离”研发助手”还差工具、记忆、检索。</p>
+<hr>
+<h2 id="6-第二步：Function（工具）让-Agent-真正”能做事”"><a href="#6-第二步：Function（工具）让-Agent-真正”能做事”" class="headerlink" title="6. 第二步：Function（工具）让 Agent 真正”能做事”"></a>6. 第二步：Function（工具）让 Agent 真正”能做事”</h2><p>研发助手最核心的能力是<strong>执行动作</strong>，不是纯生成文字。Spring AI Alibaba 把任何 Java Bean 的方法都能注册成工具。</p>
+<h3 id="6-1-声明一个工具"><a href="#6-1-声明一个工具" class="headerlink" title="6.1 声明一个工具"></a>6.1 声明一个工具</h3><p>比如”查 Git 最近提交”：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ToolConfig</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** Git 工具：查指定仓库最近 N 条提交 */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="meta">@Description(&quot;查询指定 git 仓库路径下最近的 N 条提交记录&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> Function&lt;GitLogRequest, GitLogResponse&gt; <span class="title function_">gitLogTool</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> req -&gt; &#123;</span><br><span class="line">            List&lt;String&gt; lines = GitUtil.runCommand(</span><br><span class="line">                    req.repoPath(),</span><br><span class="line">                    <span class="string">&quot;git log --oneline -n &quot;</span> + req.limit());</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">GitLogResponse</span>(lines);</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">GitLogRequest</span><span class="params">(</span></span><br><span class="line"><span class="params">            @Description(&quot;git 仓库绝对路径&quot;)</span> String repoPath,</span><br><span class="line">            <span class="meta">@Description(&quot;要查询的提交数量，默认 5&quot;)</span> Integer limit) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">record</span> <span class="title class_">GitLogResponse</span><span class="params">(List&lt;String&gt; commits)</span> &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>重点</strong>：</p>
+<ul>
+<li><code>@Bean</code> + <code>Function&lt;Req, Resp&gt;</code> 是 Spring AI 识别工具的固定模式</li>
+<li><code>@Description</code> 里的文字会被转成 JSON Schema 喂给模型，模型靠这些注释<strong>决定什么时候调</strong></li>
+<li><code>record</code> 字段上的 <code>@Description</code> 变成参数描述</li>
+</ul>
+<h3 id="6-2-查-Jira-的工具"><a href="#6-2-查-Jira-的工具" class="headerlink" title="6.2 查 Jira 的工具"></a>6.2 查 Jira 的工具</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="meta">@Description(&quot;根据关键字搜索 Jira 工单，返回工单号、标题、状态&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Function&lt;JiraSearchRequest, List&lt;JiraIssue&gt;&gt; <span class="title function_">jiraSearchTool</span><span class="params">(JiraClient jira)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> req -&gt; jira.search(req.keyword(), req.limit());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-把工具绑给-ChatClient"><a href="#6-3-把工具绑给-ChatClient" class="headerlink" title="6.3 把工具绑给 ChatClient"></a>6.3 把工具绑给 ChatClient</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@GetMapping(&quot;/ask&quot;)</span></span><br><span class="line"><span class="keyword">public</span> String <span class="title function_">ask</span><span class="params">(<span class="meta">@RequestParam</span> String q)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> chatClient.prompt()</span><br><span class="line">            .user(q)</span><br><span class="line">            .functions(<span class="string">&quot;gitLogTool&quot;</span>, <span class="string">&quot;jiraSearchTool&quot;</span>)   <span class="comment">// 关键：声明可用的工具</span></span><br><span class="line">            .call()</span><br><span class="line">            .content();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>现在用户问”帮我看看 <code>/Users/awei/myrepo</code> 最近 3 次提交”，模型会<strong>自动生成 function_call</strong>，Spring AI 框架检测到后调用你注册的 <code>gitLogTool</code>，把返回值塞回上下文让模型生成最终答复。</p>
+<h3 id="6-4-Function-Calling-的底层协议"><a href="#6-4-Function-Calling-的底层协议" class="headerlink" title="6.4 Function Calling 的底层协议"></a>6.4 Function Calling 的底层协议</h3><p>模型返回类似：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;function_call&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;gitLogTool&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;arguments&quot;</span><span class="punctuation">:</span> <span class="string">&quot;&#123;\&quot;repoPath\&quot;:\&quot;/Users/awei/myrepo\&quot;,\&quot;limit\&quot;:3&#125;&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>框架流程：</p>
+<ol>
+<li>把所有 <code>@Bean Function</code> 转成 OpenAI&#x2F;DashScope 支持的 tools schema</li>
+<li>模型返回 function_call 时，反射调用对应 Bean</li>
+<li>把调用结果作为 <code>role: tool</code> 消息追加到 history，再次请求模型拿最终文本</li>
+</ol>
+<p>你不用写任何解析代码，<strong>Spring AI Alibaba 自动完成 Tool-Use 循环</strong>（默认最多 5 轮，可配置）。</p>
+<hr>
+<h2 id="7-第三步：RAG-让-Agent-“懂你的代码”"><a href="#7-第三步：RAG-让-Agent-“懂你的代码”" class="headerlink" title="7. 第三步：RAG 让 Agent “懂你的代码”"></a>7. 第三步：RAG 让 Agent “懂你的代码”</h2><p>纯 LLM 不知道你的私有代码、内部文档、业务规则。RAG 就是<strong>检索增强生成</strong>：先从向量库捞相关片段，拼进 prompt 再问模型。</p>
+<h3 id="7-1-准备向量库与-embedding"><a href="#7-1-准备向量库与-embedding" class="headerlink" title="7.1 准备向量库与 embedding"></a>7.1 准备向量库与 embedding</h3><p>本地快速跑用 <code>SimpleVectorStore</code>（内存 + JSON 落盘）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">VectorStoreConfig</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> VectorStore <span class="title function_">vectorStore</span><span class="params">(EmbeddingModel embeddingModel)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">SimpleVectorStore</span> <span class="variable">store</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleVectorStore</span>(embeddingModel);</span><br><span class="line">        <span class="type">File</span> <span class="variable">file</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;./vectorstore.json&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (file.exists()) &#123;</span><br><span class="line">            store.load(file);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> store;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>DashScope 的 embedding 模型由 <code>spring-ai-alibaba-starter</code> 自动装配，默认 <code>text-embedding-v2</code>。</p>
+<h3 id="7-2-灌库：把代码库切片-向量化"><a href="#7-2-灌库：把代码库切片-向量化" class="headerlink" title="7.2 灌库：把代码库切片 + 向量化"></a>7.2 灌库：把代码库切片 + 向量化</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@RequiredArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CodeIngestService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> VectorStore vectorStore;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 扫描目录把所有 .java .md 切片后存入向量库 */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">ingest</span><span class="params">(String rootPath)</span> &#123;</span><br><span class="line">        List&lt;Document&gt; docs = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">try</span> (Stream&lt;Path&gt; paths = Files.walk(Paths.get(rootPath))) &#123;</span><br><span class="line">            paths.filter(Files::isRegularFile)</span><br><span class="line">                 .filter(p -&gt; p.toString().endsWith(<span class="string">&quot;.java&quot;</span>)</span><br><span class="line">                           || p.toString().endsWith(<span class="string">&quot;.md&quot;</span>))</span><br><span class="line">                 .forEach(p -&gt; docs.addAll(split(p)));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123; <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e); &#125;</span><br><span class="line"></span><br><span class="line">        vectorStore.add(docs);</span><br><span class="line">        <span class="comment">// 持久化</span></span><br><span class="line">        ((SimpleVectorStore) vectorStore).save(<span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;./vectorstore.json&quot;</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> List&lt;Document&gt; <span class="title function_">split</span><span class="params">(Path path)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="type">String</span> <span class="variable">content</span> <span class="operator">=</span> Files.readString(path);</span><br><span class="line">            <span class="comment">// 简单按 500 字符分块，生产用 TokenTextSplitter</span></span><br><span class="line">            List&lt;Document&gt; chunks = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; content.length(); i += <span class="number">500</span>) &#123;</span><br><span class="line">                <span class="type">String</span> <span class="variable">chunk</span> <span class="operator">=</span> content.substring(i, Math.min(i + <span class="number">500</span>, content.length()));</span><br><span class="line">                Map&lt;String, Object&gt; meta = Map.of(</span><br><span class="line">                        <span class="string">&quot;source&quot;</span>, path.toString(),</span><br><span class="line">                        <span class="string">&quot;offset&quot;</span>, i);</span><br><span class="line">                chunks.add(<span class="keyword">new</span> <span class="title class_">Document</span>(chunk, meta));</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> chunks;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123; <span class="keyword">return</span> List.of(); &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-3-查询时用-QuestionAnswerAdvisor-自动注入检索结果"><a href="#7-3-查询时用-QuestionAnswerAdvisor-自动注入检索结果" class="headerlink" title="7.3 查询时用 QuestionAnswerAdvisor 自动注入检索结果"></a>7.3 查询时用 <code>QuestionAnswerAdvisor</code> 自动注入检索结果</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">ChatController</span><span class="params">(ChatClient.Builder builder, VectorStore vs)</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.chatClient = builder</span><br><span class="line">            .defaultSystem(<span class="string">&quot;你是 Java 研发助手...&quot;</span>)</span><br><span class="line">            .defaultAdvisors(</span><br><span class="line">                    <span class="keyword">new</span> <span class="title class_">QuestionAnswerAdvisor</span>(vs, SearchRequest.defaults().withTopK(<span class="number">5</span>)),</span><br><span class="line">                    <span class="keyword">new</span> <span class="title class_">SimpleLoggerAdvisor</span>())</span><br><span class="line">            .build();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>QuestionAnswerAdvisor</code> 的工作：</p>
+<ol>
+<li>拦截每次请求，把 user question 作为 query 去向量库检索 top-5 文档</li>
+<li>把检索结果拼进 prompt（以”Context:”小节的形式）</li>
+<li>再交给 LLM 生成</li>
+</ol>
+<p><strong>你的业务代码不用改</strong>，Advisor 自动完成 RAG 注入。</p>
+<hr>
+<h2 id="8-第四步：多轮-Memory"><a href="#8-第四步：多轮-Memory" class="headerlink" title="8. 第四步：多轮 Memory"></a>8. 第四步：多轮 Memory</h2><p>默认每次调用 ChatClient 是无状态的。加个 <code>MessageChatMemoryAdvisor</code> 就能自动记上下文：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> ChatMemory <span class="title function_">chatMemory</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">InMemoryChatMemory</span>();   <span class="comment">// 生产用 RedisChatMemory</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Controller</span></span><br><span class="line"><span class="built_in">this</span>.chatClient = builder</span><br><span class="line">        .defaultAdvisors(</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">MessageChatMemoryAdvisor</span>(chatMemory),     <span class="comment">// 多轮记忆</span></span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">QuestionAnswerAdvisor</span>(vs, ...),           <span class="comment">// RAG</span></span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">SimpleLoggerAdvisor</span>())</span><br><span class="line">        .build();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 请求时带 conversationId 区分会话</span></span><br><span class="line">chatClient.prompt()</span><br><span class="line">        .user(q)</span><br><span class="line">        .advisors(a -&gt; a.param(<span class="string">&quot;chat_memory_conversation_id&quot;</span>, userId)</span><br><span class="line">                        .param(<span class="string">&quot;chat_memory_response_size&quot;</span>, <span class="number">10</span>))   <span class="comment">// 保留最近 10 条</span></span><br><span class="line">        .call().content();</span><br></pre></td></tr></table></figure>
+
+<p>Advisor 在调用 LLM 前把历史消息塞进去，LLM 返回后又把新轮次写回 Memory。</p>
+<p><strong>生产提醒</strong>：</p>
+<ul>
+<li><code>InMemoryChatMemory</code> 重启丢数据，要用 Redis &#x2F; MySQL 实现</li>
+<li>长对话要做滑窗或摘要，否则 token 爆炸</li>
+</ul>
+<hr>
+<h2 id="9-第五步：SSE-流式输出"><a href="#9-第五步：SSE-流式输出" class="headerlink" title="9. 第五步：SSE 流式输出"></a>9. 第五步：SSE 流式输出</h2><p>研发助手在 IDE 里要”打字机”式显示，不能等整段生成完。Spring AI Alibaba 支持 <code>stream()</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@GetMapping(value = &quot;/ask/stream&quot;, produces = MediaType.TEXT_EVENT_STREAM_VALUE)</span></span><br><span class="line"><span class="keyword">public</span> Flux&lt;String&gt; <span class="title function_">askStream</span><span class="params">(<span class="meta">@RequestParam</span> String q,</span></span><br><span class="line"><span class="params">                              <span class="meta">@RequestParam</span> String userId)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> chatClient.prompt()</span><br><span class="line">            .user(q)</span><br><span class="line">            .functions(<span class="string">&quot;gitLogTool&quot;</span>, <span class="string">&quot;jiraSearchTool&quot;</span>)</span><br><span class="line">            .advisors(a -&gt; a.param(<span class="string">&quot;chat_memory_conversation_id&quot;</span>, userId))</span><br><span class="line">            .stream()</span><br><span class="line">            .content();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>前端：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> es = <span class="keyword">new</span> <span class="title class_">EventSource</span>(<span class="string">&#x27;/ask/stream?q=xxx&amp;userId=awei&#x27;</span>);</span><br><span class="line">es.<span class="property">onmessage</span> = <span class="function"><span class="params">e</span> =&gt;</span> &#123; <span class="title function_">append</span>(e.<span class="property">data</span>); &#125;;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="10-多-Agent-协作：给-Agent-配”助手的助手”"><a href="#10-多-Agent-协作：给-Agent-配”助手的助手”" class="headerlink" title="10. 多 Agent 协作：给 Agent 配”助手的助手”"></a>10. 多 Agent 协作：给 Agent 配”助手的助手”</h2><p>复杂任务单靠一个 ChatClient 不够——比如”分析下这个报错并自动修 PR”需要：</p>
+<ol>
+<li><strong>Diagnose Agent</strong>：看日志找原因</li>
+<li><strong>Code Agent</strong>：改代码</li>
+<li><strong>Reviewer Agent</strong>：审核 diff</li>
+<li><strong>Executor Agent</strong>：跑测试、提 PR</li>
+</ol>
+<p>用 Spring AI Alibaba <code>graph</code> 模块（底层类似 LangGraph）把 Agent 编排成 DAG：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">AgentGraphConfig</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> StateGraph&lt;AgentState&gt; <span class="title function_">devAssistantGraph</span><span class="params">(</span></span><br><span class="line"><span class="params">            ChatClient.Builder builder, ToolConfig tools)</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="type">ChatClient</span> <span class="variable">diagnose</span> <span class="operator">=</span> builder.defaultSystem(<span class="string">&quot;你是定位问题的专家...&quot;</span>).build();</span><br><span class="line">        <span class="type">ChatClient</span> <span class="variable">coder</span>    <span class="operator">=</span> builder.defaultSystem(<span class="string">&quot;你是修代码的专家...&quot;</span>).build();</span><br><span class="line">        <span class="type">ChatClient</span> <span class="variable">reviewer</span> <span class="operator">=</span> builder.defaultSystem(<span class="string">&quot;你是严格的 code reviewer...&quot;</span>).build();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">StateGraph</span>&lt;&gt;(AgentState::<span class="keyword">new</span>)</span><br><span class="line">                .addNode(<span class="string">&quot;diagnose&quot;</span>, s -&gt; run(diagnose, s))</span><br><span class="line">                .addNode(<span class="string">&quot;code&quot;</span>,     s -&gt; run(coder, s))</span><br><span class="line">                .addNode(<span class="string">&quot;review&quot;</span>,   s -&gt; run(reviewer, s))</span><br><span class="line">                .addEdge(START, <span class="string">&quot;diagnose&quot;</span>)</span><br><span class="line">                .addEdge(<span class="string">&quot;diagnose&quot;</span>, <span class="string">&quot;code&quot;</span>)</span><br><span class="line">                .addEdge(<span class="string">&quot;code&quot;</span>, <span class="string">&quot;review&quot;</span>)</span><br><span class="line">                .addConditionalEdges(<span class="string">&quot;review&quot;</span>,</span><br><span class="line">                        s -&gt; s.approved() ? END : <span class="string">&quot;code&quot;</span>)   <span class="comment">// 没过 review 就回炉</span></span><br><span class="line">                .compile();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> AgentState <span class="title function_">run</span><span class="params">(ChatClient c, AgentState state)</span> &#123; <span class="comment">/* ... */</span> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>核心思想：<strong>每个 Agent 是独立的 ChatClient</strong>（有自己的 system prompt + 工具集），用状态图把它们串起来。复杂度从”一个超长 prompt”降到”多个短 prompt + 清晰流程”。</p>
+<hr>
+<h2 id="11-Docker-化部署"><a href="#11-Docker-化部署" class="headerlink" title="11. Docker 化部署"></a>11. Docker 化部署</h2><p><code>Dockerfile</code>：</p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> eclipse-temurin:<span class="number">17</span>-jre</span><br><span class="line"><span class="keyword">WORKDIR</span><span class="language-bash"> /app</span></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> target/dev-assistant-1.0.0.jar app.jar</span></span><br><span class="line"><span class="keyword">ENV</span> DASHSCOPE_API_KEY=<span class="string">&quot;&quot;</span></span><br><span class="line"><span class="keyword">ENV</span> JAVA_OPTS=<span class="string">&quot;-Xms512m -Xmx1g&quot;</span></span><br><span class="line"><span class="keyword">EXPOSE</span> <span class="number">8080</span></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="language-bash"> [<span class="string">&quot;sh&quot;</span>,<span class="string">&quot;-c&quot;</span>,<span class="string">&quot;java <span class="variable">$JAVA_OPTS</span> -jar app.jar&quot;</span>]</span></span><br></pre></td></tr></table></figure>
+
+<p><code>docker-compose.yml</code>（带 Redis + Milvus）：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3.8&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">assistant:</span></span><br><span class="line">    <span class="attr">build:</span> <span class="string">.</span></span><br><span class="line">    <span class="attr">ports:</span> [<span class="string">&quot;8080:8080&quot;</span>]</span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">DASHSCOPE_API_KEY:</span> <span class="string">$&#123;DASHSCOPE_API_KEY&#125;</span></span><br><span class="line">      <span class="attr">SPRING_REDIS_HOST:</span> <span class="string">redis</span></span><br><span class="line">      <span class="attr">SPRING_AI_VECTORSTORE_MILVUS_HOST:</span> <span class="string">milvus</span></span><br><span class="line">    <span class="attr">depends_on:</span> [<span class="string">redis</span>, <span class="string">milvus</span>]</span><br><span class="line"></span><br><span class="line">  <span class="attr">redis:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">redis:7-alpine</span></span><br><span class="line">    <span class="attr">volumes:</span> [<span class="string">&quot;redis-data:/data&quot;</span>]</span><br><span class="line"></span><br><span class="line">  <span class="attr">milvus:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">milvusdb/milvus:v2.4.0</span></span><br><span class="line">    <span class="attr">ports:</span> [<span class="string">&quot;19530:19530&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="attr">volumes:</span></span><br><span class="line">  <span class="attr">redis-data:</span></span><br></pre></td></tr></table></figure>
+
+<p>构建 &amp; 起：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./mvnw package -DskipTests</span><br><span class="line">DASHSCOPE_API_KEY=sk-xxx docker compose up -d</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="12-生产化要注意的-8-个坑"><a href="#12-生产化要注意的-8-个坑" class="headerlink" title="12. 生产化要注意的 8 个坑"></a>12. 生产化要注意的 8 个坑</h2><ol>
+<li><p><strong>工具参数幻觉</strong>：模型经常瞎编路径。工具入口加<strong>白名单校验</strong>，非法参数直接抛错让它重试。</p>
+</li>
+<li><p><strong>RAG 命中率低</strong>：</p>
+<ul>
+<li>embedding 模型选对（中文选 <code>text-embedding-v2</code>，代码选 <code>code-search-*</code>）</li>
+<li>chunk size 按语义切（AST 切代码、标题切 markdown），别按 500 字符硬切</li>
+<li>加 rerank：先召回 20 条，用 <code>bge-reranker</code> 重排取 top5</li>
+</ul>
+</li>
+<li><p><strong>Memory 爆炸</strong>：对话长了 token 成本线性增长。上<strong>滑动窗口 + 摘要</strong>（每 10 轮让 LLM 自己压缩前面历史）。</p>
+</li>
+<li><p><strong>敏感信息泄露</strong>：Advisor 里加<strong>脱敏</strong>，AK&#x2F;SK、密码、手机号调用模型前全部替换成占位符。</p>
+</li>
+<li><p><strong>工具权限</strong>：用户能调的工具要有 RBAC。<code>@PreAuthorize</code> 或 Advisor 里拦截 functionName 做鉴权。</p>
+</li>
+<li><p><strong>限流与熔断</strong>：DashScope QPS 有限，给 ChatClient 外层套 Sentinel &#x2F; Resilience4j。</p>
+</li>
+<li><p><strong>可观测性</strong>：</p>
+<ul>
+<li>接 Micrometer 上报 prompt_tokens &#x2F; completion_tokens</li>
+<li>每次请求存成<strong>完整 trace</strong>（user → tools → model raw response）便于回放</li>
+<li>失败请求自动打到<strong>人工审核队列</strong></li>
+</ul>
+</li>
+<li><p><strong>幻觉兜底</strong>：涉及数据结论，要求模型<strong>引用工具返回值</strong>，引用不上的话术直接拒答：</p>
+<blockquote>
+<p>“相关查询未返回结果，我无法回答此问题。”</p>
+</blockquote>
+</li>
+</ol>
+<hr>
+<h2 id="13-进阶方向"><a href="#13-进阶方向" class="headerlink" title="13. 进阶方向"></a>13. 进阶方向</h2><ul>
+<li><strong>代码 Agent 专用</strong>：接 Tree-sitter 做 AST 分析、接 LSP 做符号跳转</li>
+<li><strong>沙箱执行</strong>：E2B &#x2F; Daytona &#x2F; 本地 Docker 池（见我<a href="/2026/04/23/workRecords/deepagents/">另一篇 DeepAgents 文章</a>）</li>
+<li><strong>持久化工作流</strong>：长任务拆成 step，写入数据库，支持断点续跑</li>
+<li><strong>Human-in-the-loop</strong>：危险操作（删库、上线）前插一个人工审批节点</li>
+</ul>
+<hr>
+<h2 id="14-参考"><a href="#14-参考" class="headerlink" title="14. 参考"></a>14. 参考</h2><ul>
+<li>Spring AI 官方文档：<a target="_blank" rel="noopener" href="https://docs.spring.io/spring-ai/reference/">https://docs.spring.io/spring-ai/reference/</a></li>
+<li>Spring AI Alibaba 项目：<a target="_blank" rel="noopener" href="https://github.com/alibaba/spring-ai-alibaba">https://github.com/alibaba/spring-ai-alibaba</a></li>
+<li>通义千问 DashScope 文档：<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/dashscope/">https://help.aliyun.com/zh/dashscope/</a></li>
+<li>我的 ReAct + Function Calling 原理文：<a href="/2026/04/15/workRecords/react_funcalling/">&#x2F;2026&#x2F;04&#x2F;15&#x2F;workRecords&#x2F;react_funcalling&#x2F;</a></li>
+<li>我的 DeepAgents 实战文：<a href="/2026/04/23/workRecords/deepagents/">&#x2F;2026&#x2F;04&#x2F;23&#x2F;workRecords&#x2F;deepagents&#x2F;</a></li>
+</ul>
+<hr>
+<p><strong>一句话收尾</strong>：<br>研发助手 Agent 不神秘，核心就是 <strong>“ChatClient + Tools + RAG + Memory”</strong> 的反复组合。Spring AI Alibaba 把这些原语全给你封好了，你只需要专注业务：定义工具、灌数据、编排流程。剩下的 90% 是工程活——脱敏、限流、可观测、权限——和大模型没啥关系。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://ww0791.github.io">阿伟</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://ww0791.github.io/2026/05/07/workRecords/spring_ai_alibaba_agent/">https://ww0791.github.io/2026/05/07/workRecords/spring_ai_alibaba_agent/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Agent/">Agent</a><a class="post-meta__tags" href="/tags/LLM/">LLM</a><a class="post-meta__tags" href="/tags/Spring-AI-Alibaba/">Spring AI Alibaba</a><a class="post-meta__tags" href="/tags/RAG/">RAG</a><a class="post-meta__tags" href="/tags/Function-Calling/">Function Calling</a><a class="post-meta__tags" href="/tags/Java/">Java</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.jpeg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/06/30/workRecords/goland_dev_fix/" title="GoLand Debug 看不到变量和参数的通用修复指南"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">Previous</div><div class="info-item-2">GoLand Debug 看不到变量和参数的通用修复指南</div></div><div class="info-2"><div class="info-item-1"> 现象：GoLand 能启动 Debug，断点也可能命中，但 Variables 面板里变量或参数显示不完整、看不到值，或者提示 optimized out &#x2F; unreadable &#x2F; could not read。有时还会遇到 Delve 内部错误，例如 Internal debugger error: runtime error: invalid memory address or nil pointer dereference。这类问题大多数和 编译优化、Delve 版本、GoLand 内置 Delve、GOROOT、路径映射 有关。   一、先看最常见原因：Go 编译优化Go 默认编译会开启优化和内联。Debug 时如果函数被内联、变量被优化掉，调试器就可能拿不到变量信息。 1. 解决方式在 GoLand 的 Run&#x2F;Debug Configuration 里增加 Go tool arguments： 1-gcflags=&quot;all=-N -l&quot;  含义：  -N：关闭优化 -l：关闭内联 all=：对所有依赖包也生效  ...</div></div></div></a><a class="pagination-related" href="/2026/05/07/interview/spring/" title="Spring 面试题整理（详解版）"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">Spring 面试题整理（详解版）</div></div><div class="info-2"><div class="info-item-1"> 覆盖 IoC &#x2F; AOP &#x2F; Bean 生命周期 &#x2F; 循环依赖 &#x2F; 事务 &#x2F; Spring MVC &#x2F; Spring Boot 高频题。每题配原理 + 源码关键点 + 面试话术，可直接背。    一、IoC &#x2F; DIQ1. 什么是 IoC？什么是 DI？两者关系？IoC（Inversion of Control，控制反转） 是一种设计思想：对象的创建、依赖的装配不再由使用者 new，而是交给容器完成。程序员只负责”声明”，容器负责”装配”。 DI（Dependency Injection，依赖注入） 是 IoC 的一种实现方式：容器在创建对象时，把它依赖的其他对象”注入”进来。 关系：IoC 是思想，DI 是手段。Spring IoC 容器通过 DI 完成控制反转。  Q2. Spring 有几种依赖注入方式？各自优缺点？ 构造器注入（推荐） 12345@Servicepublic class UserService &#123;    private final UserDao userDao;    pu...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/04/15/workRecords/react_funcalling/" title="从零手撸 ReAct Agent：原理与 Function Calling 实战"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-15</div><div class="info-item-2">从零手撸 ReAct Agent：原理与 Function Calling 实战</div></div><div class="info-2"><div class="info-item-1"> 这篇不用 LangChain、不用 LlamaIndex、不用任何 Agent 框架。只用 openai 或 anthropic 官方 SDK，从零手撸一个 ReAct Agent。 读完你会拿到两样东西：  心智模型：ReAct 到底在做什么，为什么所有 Agent 框架本质都是它的变种 可跑的代码：100 行左右的完整实现，能搜天气、查股票、做数学题    一、先问一个问题：LLM 凭什么能”用工具”？直接问 GPT：”北京今天多少度？” —— 它会胡诌（训练数据截止日期之后的事它不知道）。 但如果你告诉它：”你可以调一个 get_weather(city) 函数，我会帮你执行并把结果告诉你”，它就能给出正确答案。 “告诉 LLM 有什么工具 + 让它生成工具调用 + 你执行 + 把结果塞回给它” —— 这个循环就是 Agent 的本体。 ReAct 是这个循环最经典的实现思路，Function Calling 是这个循环在工程上的最佳实践。  二、ReAct 是什么ReAct &#x3D; Reasoning + Acting，2022 年 Google 的论文提出。一句...</div></div></div></a><a class="pagination-related" href="/2026/04/23/workRecords/deepagents/" title="LangChain DeepAgents 入门到部署实战"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-23</div><div class="info-item-2">LangChain DeepAgents 入门到部署实战</div></div><div class="info-2"><div class="info-item-1"> 读完需要的前置：Python 基础 + 会用 pip + 会用 Docker。不要求会 LangChain。   一、先搞清楚：DeepAgents 到底是什么？1. 一句话版DeepAgents 是 LangChain 团队在 2025 年开源的 Agent 框架，你可以理解为：**”写 Claude Code &#x2F; Manus 这类能深度干活的 AI 助手”的官方模板**。 2. 和普通 Agent 的区别可能你之前见过这种写法： 1234# 普通 LangChain Agent 一把梭from langchain.agents import create_react_agentagent = create_react_agent(llm, tools=[search_tool])agent.invoke(&#123;&quot;input&quot;: &quot;搜一下向量数据库&quot;&#125;)  这种 Agent 适合单轮简单任务：问问题、搜一下、返回答案。但是你让它写个 500 行报告、重构一个项目、调试一段代码，它就抓瞎了：  没有规划能力：上来...</div></div></div></a><a class="pagination-related" href="/2026/05/07/interview/spring/" title="Spring 面试题整理（详解版）"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-07</div><div class="info-item-2">Spring 面试题整理（详解版）</div></div><div class="info-2"><div class="info-item-1"> 覆盖 IoC &#x2F; AOP &#x2F; Bean 生命周期 &#x2F; 循环依赖 &#x2F; 事务 &#x2F; Spring MVC &#x2F; Spring Boot 高频题。每题配原理 + 源码关键点 + 面试话术，可直接背。    一、IoC &#x2F; DIQ1. 什么是 IoC？什么是 DI？两者关系？IoC（Inversion of Control，控制反转） 是一种设计思想：对象的创建、依赖的装配不再由使用者 new，而是交给容器完成。程序员只负责”声明”，容器负责”装配”。 DI（Dependency Injection，依赖注入） 是 IoC 的一种实现方式：容器在创建对象时，把它依赖的其他对象”注入”进来。 关系：IoC 是思想，DI 是手段。Spring IoC 容器通过 DI 完成控制反转。  Q2. Spring 有几种依赖注入方式？各自优缺点？ 构造器注入（推荐） 12345@Servicepublic class UserService &#123;    private final UserDao userDao;    pu...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> Comments</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">阿伟</div><div class="author-info-description">一个后端打工人的技术笔记与日常碎碎念</div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">18</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">38</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">17</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/ww0791" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:1430365719@qq.com" target="_blank" title="Email"><i class="fas fa-envelope" style="color: #4a7dbe;"></i></a><a class="social-icon" href="/atom.xml" target="_blank" title="RSS"><i class="fas fa-rss" style="color: #ff6600;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95%E5%AF%BC%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">目录导览</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E7%A0%94%E5%8F%91%E5%8A%A9%E6%89%8B-Agent-%E5%88%B0%E5%BA%95%E5%9C%A8%E5%81%9A%E4%BB%80%E4%B9%88"><span class="toc-number">2.</span> <span class="toc-text">1. 研发助手 Agent 到底在做什么</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B8%E5%9E%8B%E6%A8%A1%E5%9D%97%E7%BB%84%E6%88%90"><span class="toc-number">2.1.</span> <span class="toc-text">典型模块组成</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF-Spring-AI-Alibaba-%E4%B8%8D%E6%98%AF%E8%A3%B8-OpenAI-SDK"><span class="toc-number">3.</span> <span class="toc-text">2. 为什么是 Spring AI Alibaba 不是裸 OpenAI SDK</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E6%A0%B8%E5%BF%83%E6%8A%BD%E8%B1%A1%E4%B8%80%E5%BC%A0%E8%A1%A8"><span class="toc-number">4.</span> <span class="toc-text">3. 核心抽象一张表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E5%B7%A5%E7%A8%8B%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%9A%E4%BB%8E-0-%E5%BC%80%E5%A7%8B"><span class="toc-number">5.</span> <span class="toc-text">4. 工程初始化：从 0 开始</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E7%8E%AF%E5%A2%83"><span class="toc-number">5.1.</span> <span class="toc-text">4.1 环境</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E4%BE%9D%E8%B5%96"><span class="toc-number">5.2.</span> <span class="toc-text">4.2 依赖</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E9%85%8D%E7%BD%AE"><span class="toc-number">5.3.</span> <span class="toc-text">4.3 配置</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E8%83%BD%E8%81%8A%E5%A4%A9%E7%9A%84-ChatClient"><span class="toc-number">6.</span> <span class="toc-text">5. 第一步：能聊天的 ChatClient</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9AFunction%EF%BC%88%E5%B7%A5%E5%85%B7%EF%BC%89%E8%AE%A9-Agent-%E7%9C%9F%E6%AD%A3%E2%80%9D%E8%83%BD%E5%81%9A%E4%BA%8B%E2%80%9D"><span class="toc-number">7.</span> <span class="toc-text">6. 第二步：Function（工具）让 Agent 真正”能做事”</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E5%A3%B0%E6%98%8E%E4%B8%80%E4%B8%AA%E5%B7%A5%E5%85%B7"><span class="toc-number">7.1.</span> <span class="toc-text">6.1 声明一个工具</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E6%9F%A5-Jira-%E7%9A%84%E5%B7%A5%E5%85%B7"><span class="toc-number">7.2.</span> <span class="toc-text">6.2 查 Jira 的工具</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%8A%8A%E5%B7%A5%E5%85%B7%E7%BB%91%E7%BB%99-ChatClient"><span class="toc-number">7.3.</span> <span class="toc-text">6.3 把工具绑给 ChatClient</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-Function-Calling-%E7%9A%84%E5%BA%95%E5%B1%82%E5%8D%8F%E8%AE%AE"><span class="toc-number">7.4.</span> <span class="toc-text">6.4 Function Calling 的底层协议</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%9ARAG-%E8%AE%A9-Agent-%E2%80%9C%E6%87%82%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81%E2%80%9D"><span class="toc-number">8.</span> <span class="toc-text">7. 第三步：RAG 让 Agent “懂你的代码”</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-%E5%87%86%E5%A4%87%E5%90%91%E9%87%8F%E5%BA%93%E4%B8%8E-embedding"><span class="toc-number">8.1.</span> <span class="toc-text">7.1 准备向量库与 embedding</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E7%81%8C%E5%BA%93%EF%BC%9A%E6%8A%8A%E4%BB%A3%E7%A0%81%E5%BA%93%E5%88%87%E7%89%87-%E5%90%91%E9%87%8F%E5%8C%96"><span class="toc-number">8.2.</span> <span class="toc-text">7.2 灌库：把代码库切片 + 向量化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-3-%E6%9F%A5%E8%AF%A2%E6%97%B6%E7%94%A8-QuestionAnswerAdvisor-%E8%87%AA%E5%8A%A8%E6%B3%A8%E5%85%A5%E6%A3%80%E7%B4%A2%E7%BB%93%E6%9E%9C"><span class="toc-number">8.3.</span> <span class="toc-text">7.3 查询时用 QuestionAnswerAdvisor 自动注入检索结果</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-%E7%AC%AC%E5%9B%9B%E6%AD%A5%EF%BC%9A%E5%A4%9A%E8%BD%AE-Memory"><span class="toc-number">9.</span> <span class="toc-text">8. 第四步：多轮 Memory</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9-%E7%AC%AC%E4%BA%94%E6%AD%A5%EF%BC%9ASSE-%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA"><span class="toc-number">10.</span> <span class="toc-text">9. 第五步：SSE 流式输出</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#10-%E5%A4%9A-Agent-%E5%8D%8F%E4%BD%9C%EF%BC%9A%E7%BB%99-Agent-%E9%85%8D%E2%80%9D%E5%8A%A9%E6%89%8B%E7%9A%84%E5%8A%A9%E6%89%8B%E2%80%9D"><span class="toc-number">11.</span> <span class="toc-text">10. 多 Agent 协作：给 Agent 配”助手的助手”</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#11-Docker-%E5%8C%96%E9%83%A8%E7%BD%B2"><span class="toc-number">12.</span> <span class="toc-text">11. Docker 化部署</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#12-%E7%94%9F%E4%BA%A7%E5%8C%96%E8%A6%81%E6%B3%A8%E6%84%8F%E7%9A%84-8-%E4%B8%AA%E5%9D%91"><span class="toc-number">13.</span> <span class="toc-text">12. 生产化要注意的 8 个坑</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#13-%E8%BF%9B%E9%98%B6%E6%96%B9%E5%90%91"><span class="toc-number">14.</span> <span class="toc-text">13. 进阶方向</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#14-%E5%8F%82%E8%80%83"><span class="toc-number">15.</span> <span class="toc-text">14. 参考</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/30/workRecords/goland_dev_fix/" title="GoLand Debug 看不到变量和参数的通用修复指南">GoLand Debug 看不到变量和参数的通用修复指南</a><time datetime="2026-06-30T13:00:00.000Z" title="Created 2026-06-30 21:00:00">2026-06-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/07/workRecords/spring_ai_alibaba_agent/" title="基于 Spring AI Alibaba 手撸一个企业研发助手 Agent（架构解析 + 全量代码）">基于 Spring AI Alibaba 手撸一个企业研发助手 Agent（架构解析 + 全量代码）</a><time datetime="2026-05-07T13:00:00.000Z" title="Created 2026-05-07 21:00:00">2026-05-07</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/07/interview/spring/" title="Spring 面试题整理（详解版）">Spring 面试题整理（详解版）</a><time datetime="2026-05-07T12:00:00.000Z" title="Created 2026-05-07 20:00:00">2026-05-07</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/04/23/workRecords/deepagents/" title="LangChain DeepAgents 入门到部署实战">LangChain DeepAgents 入门到部署实战</a><time datetime="2026-04-23T13:00:00.000Z" title="Created 2026-04-23 21:00:00">2026-04-23</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/04/20/workRecords/k8s/" title="k8s教程">k8s教程</a><time datetime="2026-04-20T11:44:32.000Z" title="Created 2026-04-20 19:44:32">2026-04-20</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By 阿伟</span><span class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 6.3.0</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="Scroll to Comments"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"pathname","strict":0,"reactions-enabled":1,"emit-metadata":0,"input-position":"bottom","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'ww0791/ww0791.github.io',
+      'data-repo-id': 'R_kgDOMEuOag',
+      'data-category-id': 'DIC_kwDOMEuOas4C7eQS',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/refresh-hitokoto.js"></script><script src="/js/clock-widget.js"></script><script src="/js/card-click.js"></script><script id="canvas_nest" defer="defer" color="120,180,255" opacity="0.6" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading Database</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=5.5.4"></script></div></div></body></html>
